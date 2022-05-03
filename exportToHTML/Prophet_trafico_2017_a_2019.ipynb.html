@@ -1,0 +1,137 @@
+<html>
+<head>
+<title>Prophet_trafico_2017_a_2019.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #cc7832;}
+.s2 { color: #a9b7c6;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Prophet_trafico_2017_a_2019.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% 
+</span><span class="s1">import </span><span class="s2">numpy </span><span class="s1">as </span><span class="s2">np</span>
+<span class="s1">import </span><span class="s2">pandas </span><span class="s1">as </span><span class="s2">pd</span>
+<span class="s1">import </span><span class="s2">seaborn </span><span class="s1">as </span><span class="s2">sns</span>
+<span class="s1">import </span><span class="s2">matplotlib.pyplot </span><span class="s1">as </span><span class="s2">plt</span>
+<span class="s2">sns.set(color_codes=</span><span class="s1">True</span><span class="s2">)</span>
+<span class="s2">%matplotlib inline</span>
+<span class="s1">import </span><span class="s2">pickle</span>
+<span class="s2">sns.set(color_codes=</span><span class="s1">True</span><span class="s2">)</span>
+<span class="s2">%matplotlib inline</span>
+<span class="s0">#%% 
+</span><span class="s2">trafico_union_semestres = pd.read_pickle(</span><span class="s3">'trafico_union_semestres.plk'</span><span class="s2">)</span>
+<span class="s0">#%% 
+</span><span class="s2">trafico_union_semestres.head()</span>
+<span class="s0">#%% 
+</span><span class="s2">trafico_union_semestres.fecha = pd.to_datetime(trafico_union_semestres.fecha)</span>
+<span class="s0">#%% 
+</span><span class="s2">trafico_union_semestres.dtypes</span>
+<span class="s0">#%% 
+</span><span class="s2">trafico_union_semestres.fecha.dt.year.value_counts()</span>
+<span class="s0">#%% 
+</span><span class="s2">trafico_union_semestres.head()</span>
+<span class="s0">#%% md 
+</span><span class="s2">Hay que hacerlo para cada tramo y para cada periodo que se quiera predecir 
+Applicación interactiva, se le pasa el tramo por el numero y la predicción por dia entero, o desde tal hora a tal hora, o solo una hora, y da el resultado. 
+</span><span class="s0">#%% 
+#del input</span>
+<span class="s2">print(</span><span class="s3">&quot;Por favor introduzca tramo: &quot;</span><span class="s2">)</span>
+<span class="s2">tramo = input(</span><span class="s3">&quot;Por favor introduzca tramo: &quot;</span><span class="s2">)</span>
+<span class="s2">dias = </span><span class="s3">&quot;&quot;</span><span class="s2">; hora=</span><span class="s3">&quot;&quot;</span><span class="s2">; horaInicial=-</span><span class="s4">1</span><span class="s2">; horaFinal=-</span><span class="s4">1</span><span class="s2">; numeroDeDias=-</span><span class="s4">1</span><span class="s2">;</span>
+
+<span class="s2">diaUHora = input(</span><span class="s3">&quot;Prediccion del dia entero o de alguna/s horas concretas? D/d para Dia entero. H/h para hora&quot;</span><span class="s2">)</span>
+<span class="s1">if </span><span class="s2">diaUHora == </span><span class="s3">&quot;D&quot; </span><span class="s1">or </span><span class="s2">diaUHora == </span><span class="s3">&quot;d&quot;</span><span class="s2">:</span>
+    <span class="s2">dia = input(</span><span class="s3">&quot;Por favor introduce el dia en formato dd (ejempl0 25)&quot;</span><span class="s2">)</span>
+<span class="s1">elif </span><span class="s2">diaUHora == </span><span class="s3">&quot;H&quot; </span><span class="s1">or </span><span class="s2">diaUHora == </span><span class="s3">&quot;h&quot;</span><span class="s2">:</span>
+    <span class="s2">horaInicial = input(</span><span class="s3">&quot;Por favor introduzca hora inicial tramo: 0-23 &quot;</span><span class="s2">)</span>
+    <span class="s2">horaFinal = input(</span><span class="s3">&quot;Por favor introduzca hora inicial tramo: 0-23 &quot;</span><span class="s2">);</span>
+
+<span class="s2">numeroDeDias = input(</span><span class="s3">&quot;Número de días a predecir&quot;</span><span class="s2">)</span>
+
+<span class="s2">quepredic = input(</span><span class="s3">&quot;Que desea predecir: Intensidad(I), Ocupación(O), o Velocidad(V)&quot;</span><span class="s2">)</span>
+
+<span class="s2">print(</span><span class="s3">&quot;tramo:&quot;</span><span class="s1">, </span><span class="s2">tramo</span><span class="s1">, </span><span class="s3">&quot;Hora inicial: &quot;</span><span class="s1">, </span><span class="s2">horaInicial</span><span class="s1">, </span><span class="s3">&quot;Hora final:&quot;</span><span class="s1">, </span><span class="s2">horaFinal</span><span class="s1">, </span><span class="s3">&quot;dias &quot;</span><span class="s1">, </span><span class="s2">dias</span><span class="s1">, </span><span class="s3">&quot;Número de dia&quot;</span><span class="s1">, </span><span class="s2">numeroDeDias)</span>
+<span class="s0">#%% 
+</span><span class="s2">print(</span><span class="s3">&quot;tramo:&quot;</span><span class="s1">, </span><span class="s2">tramo)</span>
+<span class="s2">df = trafico_union_semestres.loc[trafico_union_semestres[</span><span class="s3">'idTramo'</span><span class="s2">] == int(tramo)]</span>
+<span class="s2">calle = df.descripcion.unique()[</span><span class="s4">0</span><span class="s2">]</span>
+<span class="s2">print(</span><span class="s3">&quot;Calle: &quot;</span><span class="s2">+calle+</span><span class="s3">&quot;</span><span class="s1">\n</span><span class="s3">&quot;</span><span class="s2">)</span>
+<span class="s2">calleCorrecta = input(</span><span class="s3">&quot;¿Desea predecir el tramo de la calle &quot;</span><span class="s2">+calle+</span><span class="s3">&quot;? S/N&quot;</span><span class="s2">)</span>
+<span class="s0">#%% 
+</span><span class="s1">if </span><span class="s2">diaUHora == </span><span class="s3">&quot;H&quot; </span><span class="s1">or </span><span class="s2">diaUHora == </span><span class="s3">&quot;h&quot;</span><span class="s2">:</span>
+    <span class="s2">df = df.loc[df[</span><span class="s3">'hora'</span><span class="s2">].between(int(horaInicial)</span><span class="s1">,</span><span class="s2">int(horaFinal))]</span>
+<span class="s1">elif </span><span class="s2">diaUHora == </span><span class="s3">&quot;D&quot; </span><span class="s1">or </span><span class="s2">diaUHora == </span><span class="s3">&quot;d&quot;</span><span class="s2">:</span>
+    <span class="s2">df = df.loc[df[</span><span class="s3">'fecha'</span><span class="s2">].dt.day == int(dia)]</span>
+
+<span class="s1">if </span><span class="s2">quepredic == </span><span class="s3">&quot;I&quot; </span><span class="s1">or </span><span class="s2">quepredic== </span><span class="s3">&quot;i&quot;</span><span class="s2">:</span>
+    <span class="s2">df[</span><span class="s3">'media'</span><span class="s2">] = df[</span><span class="s3">'intensidad'</span><span class="s2">][</span><span class="s3">'mean'</span><span class="s2">]</span>
+<span class="s1">elif </span><span class="s2">quepredic == </span><span class="s3">&quot;O&quot; </span><span class="s1">or </span><span class="s2">quepredic== </span><span class="s3">&quot;o&quot;</span><span class="s2">:</span>
+    <span class="s2">df[</span><span class="s3">'media'</span><span class="s2">] = df[</span><span class="s3">'ocupacion'</span><span class="s2">][</span><span class="s3">'mean'</span><span class="s2">]</span>
+<span class="s1">elif </span><span class="s2">quepredic == </span><span class="s3">&quot;V&quot; </span><span class="s1">or </span><span class="s2">quepredic== </span><span class="s3">&quot;v&quot;</span><span class="s2">:</span>
+    <span class="s2">df[</span><span class="s3">'media'</span><span class="s2">] = df[</span><span class="s3">'velocidad'</span><span class="s2">][</span><span class="s3">'mean'</span><span class="s2">]</span>
+
+<span class="s2">df.head()</span>
+<span class="s0">#%% 
+</span><span class="s2">print(</span><span class="s3">'Se computa por dias sea calculo de solo una hora o de un día entero'</span><span class="s2">)</span>
+<span class="s2">df.fecha.dt.year.value_counts()</span>
+<span class="s0">#%% md 
+</span><span class="s2">Se computa por dias sea cálculo de solo una hora o de un día entero 
+</span><span class="s0">#%% 
+</span><span class="s2">df.set_index(</span><span class="s3">'fecha'</span><span class="s1">,</span><span class="s2">inplace=</span><span class="s1">True</span><span class="s2">)</span>
+<span class="s0">#%% 
+</span><span class="s2">df[</span><span class="s3">'rolling_weekly_avg'</span><span class="s2">] = df.media - df.media.shift().fillna(</span><span class="s4">0</span><span class="s2">)</span>
+<span class="s0">#%% 
+</span><span class="s2">df.head()</span>
+<span class="s0">#%% 
+</span><span class="s2">ts = pd.DataFrame({</span><span class="s3">'ds'</span><span class="s2">:df.index</span><span class="s1">, </span><span class="s3">'y'</span><span class="s2">:df.media})</span>
+<span class="s0">#%% 
+</span><span class="s2">ts.tail()</span>
+<span class="s0">#%% 
+</span><span class="s1">import </span><span class="s2">fbprophet</span>
+<span class="s1">from </span><span class="s2">fbprophet </span><span class="s1">import </span><span class="s2">Prophet</span>
+<span class="s2">print(fbprophet.__version__)</span>
+<span class="s0">#%% 
+# prophet = Prophet(yearly_seasonality = true) #yearly_seasonality = False # probar</span>
+<span class="s2">prophet = Prophet()</span>
+<span class="s0">#%% 
+</span><span class="s2">prophet.fit(ts)</span>
+<span class="s0">#%% 
+</span><span class="s2">future = prophet.make_future_dataframe(periods=int(numeroDeDias))</span>
+<span class="s2">forecast = prophet.predict(future)</span>
+<span class="s0">#%% 
+</span><span class="s2">forecast[[</span><span class="s3">'ds'</span><span class="s1">,</span><span class="s3">'yhat'</span><span class="s1">,</span><span class="s3">'yhat_lower'</span><span class="s1">,</span><span class="s3">'yhat_upper'</span><span class="s2">]].head()</span>
+<span class="s0">#%% 
+</span><span class="s2">forecast[[</span><span class="s3">'ds'</span><span class="s1">,</span><span class="s3">'yhat'</span><span class="s1">,</span><span class="s3">'yhat_lower'</span><span class="s1">,</span><span class="s3">'yhat_upper'</span><span class="s2">]].tail()</span>
+<span class="s0">#%% 
+# plot</span>
+<span class="s2">fig = prophet.plot(forecast)</span>
+<span class="s0">#%% 
+</span><span class="s2">prophet = Prophet(yearly_seasonality=</span><span class="s1">True, </span><span class="s2">changepoint_range=</span><span class="s4">1</span><span class="s1">,</span><span class="s2">changepoint_prior_scale=</span><span class="s4">0.75</span><span class="s2">)</span>
+<span class="s2">prophet.fit(ts)</span>
+<span class="s0">#%% md 
+</span><span class="s2">INFO:fbprophet:Disabling yearly seasonality. Run prophet with yearly_seasonality=True to override this. 
+INFO:fbprophet:Disabling daily seasonality. Run prophet with daily_seasonality=True to override this. 
+</span><span class="s0">#%% 
+</span><span class="s2">future = prophet.make_future_dataframe(periods=int(numeroDeDias))</span>
+<span class="s2">forecast = prophet.predict(future)</span>
+<span class="s0">#%% 
+</span><span class="s2">forecast[[</span><span class="s3">'ds'</span><span class="s1">,</span><span class="s3">'yhat'</span><span class="s1">,</span><span class="s3">'yhat_lower'</span><span class="s1">,</span><span class="s3">'yhat_upper'</span><span class="s2">]].tail()</span>
+<span class="s0">#%% 
+# plot</span>
+<span class="s2">fig = prophet.plot(forecast)</span>
+<span class="s0">#%% 
+#data = forecast[['ds','yhat','yhat_lower','yhat_upper']].tail(int(numeroDeDias))</span>
+<span class="s0">#dfpredicted =</span>
+<span class="s2">forecast.ds.dt.year.value_counts()</span>
+<span class="s0">#%% 
+</span></pre>
+</body>
+</html>
