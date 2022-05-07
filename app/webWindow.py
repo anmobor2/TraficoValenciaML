@@ -97,5 +97,7 @@ class traffic_prediction:
 
         plot_plotly(prophet, forecast)
 
+
+
 if __name__ == '__main__':
     traffic_prediction.run(self)
