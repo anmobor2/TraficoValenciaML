@@ -21,6 +21,22 @@ trafico_union_semestres.fecha = pd.to_datetime(trafico_union_semestres.fecha)
 descripcion = trafico_union_semestres['descripcion'].unique()
 idTramoDescripcion = trafico_union_semestres[['descripcion', 'idTramo']].drop_duplicates()
 trafico_union_semestres_sin2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] > '2019-01-06')]
+trafico_union_semestres_solo2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] <= '2019-01-06')]
+
+#trafico_union_semestres_solo2019['intensidadMedia'] = trafico_union_semestres_solo2019['intensidad']['mean']
+intensidadMedia = trafico_union_semestres_solo2019['intensidad']['mean']
+trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
+
+trafico_union_semestres_solo2019.drop('intensidad', level=0, axis=1, inplace=True)
+trafico_union_semestres_solo2019.drop('ocupacion', level=0, axis=1, inplace=True)
+trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True)
+#trafico_union_semestres_solo2019.drop(['intensidad']['count'], axis = 1)
+#print(trafico_union_semestres_solo2019.head())
+
+# el DF temporal
+df = trafico_union_semestres_solo2019.loc[trafico_union_semestres_solo2019['idTramo'] == int(1)]
+
+dataframeprophet = pd.DataFrame()
 
 colors = {
     'background': '#777777',
@@ -29,13 +45,18 @@ colors = {
 
 # assume you have a "long-form" data frame
 # see https://plotly.com/python/px-arguments/ for more options
-df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    "Amount": [4, 1, 2, 2, 4, 5],
-    "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-})
+# df = pd.DataFrame({
+#     "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
+#     "Amount": [4, 1, 2, 2, 4, 5],
+#     "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
+# })
+# Load a small dataframe as e.g. and when the prophet loads the result update this dataframe also
+#fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+#fig = px.bar(df, x="fecha", y="intensidadMedia", color="intensidadMedia", barmode="group" )
+fig = px.line(df, x='fecha', y='intensidadMedia',color="hora", title='Ejemplo')
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+# Este se cargará luego con el tendrá la misma fecha que el resultado de la prediccion de Prophet
+#fig = px.bar(trafico_union_semestres_solo2019, x="fecha", y="intensidadMedia", color="idTramo", barmode="group" )
 
 fig.update_layout(
     plot_bgcolor=colors['background'],
@@ -43,12 +64,13 @@ fig.update_layout(
     font_color=colors['text']
 )
 
+#def make_layout(fig):
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
 
     html.H1(
-        children=['Prediccion de Tráfico Valencia capital',
+        children=['Prediccion de Tráfico Valencia capital con Prophet y Dash. ',
                   'Las fechas para predecir pudiendo comparar resultado van de 2019-01-06 hasta el 2019-12-04. ',
-                  'Otras fechas posteriores no se podrá comparar el resultado con los datos'],
+                  'Otras fechas posteriores no se podrá comparar el resultado con los datos pero se hará la predicción.'],
         style={
             'textAlign': 'center',
             'color': colors['text']
@@ -61,79 +83,74 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             html.Div(id='dd-output-container'),
         ], style={'width': '50%', 'display': 'inline-block', 'color': colors['text']}),
         html.Br(),
-        # html.Div([
-        #     html.Label('Seleccione opcións de visualización:'),
-        #     dcc.RadioItems(['Prediccion del dia entero concreto (e.g. día 25 o día 14 de todos los meses)',
-        #                     'Predicción de algunas horas concretas de todos los días (e.g. de hora inicial 18 a final 19)',
-        #                     'Predicción de un número de días desde la fecha inicial (e.g los próximos 30 o 365 días)',
-        #                     'algúna/s horas concretas de un día en concreto (e.g. de 7 a 8 todos los días 15)'
-        #                     ], "", id='options-radio', style={'display': 'block'}),
-        # ]),
-        # html.Br(),
 
         html.Div([
-            html.Label('Que desea predecir: Intensidad(I), Ocupación(O), o Velocidad(V):'),
-            dcc.Input(id='IntenoOcupaoVeloci', value='', type='text'),
-        ]),
-
-        html.Div([
-            "dia entero concreto a predecir (e.g. dia 1 o el 2 o 3 o el 15 o el 30)DIA CONCRETO: ",
-            dcc.Input(id='dia-diaConcreto', value='', type='text'),
-            "hasta que fecha predecir dia concreto formato (yyyy-mm-dd)FECHA FINAL: ",
+            "Hora a predecir formato(0 para las 12 noche, de 0 a 23): ",
+            dcc.Input(id='horapredecir', value='', type='text'),
+            "hasta que fecha predecir a partir de 2019-01-06 hasta 2019-12-04 formato (yyyy-mm-dd): ",
             dcc.Input(id='fecha-diaConcreto', value='', type='text'),
             html.Button(id='submit-diaConcreto', type='submit', children='Predecir'),
             html.Br(), html.Br(),
             html.Div(id='output_div')
         ]),
-        html.Div([
-            "Predicción de alguna/s horas concretas de todos los días (e.g. de hora inicial 18 a final 19): ",
-            "Hora inicial formato(0 para las 12 noche, 1 para la una noche, 23 para las 11 noche)HORA INICIAL: ",
-            dcc.Input(id='hora-inicial-horasConcretasTodos', value='', type='text'),
-            "Hora final: formato(0 para las 12 noche, 1 para la una noche, 23 para las 11 noche)HORA FINAL:",
-            dcc.Input(id='hora-final-horasConcretasTodos', value='', type='text'),
-            "hasta que fecha predecir, fecha inicial final formato (yyyy-mm-dd)FECHA FINAL: ",
-            dcc.Input(id='fecha-horasConcretasTodos', value='', type='text'),
-            html.Button(id='submit-horasConcretasTodos', type='submit', children='Predecir'),
-            html.Br(), html.Br(),
-            html.Div(id='output_div2')
 
-        ]),
-        html.Div([
-            "Predicción de alguna/s horas concretas de algún día concreto (e.g. día 19 de hora inicial 18 a final 19):",
-            "dia concreto a predecir (e.g. dia 1 o el 2 o 3 o el 15 o el 30)DÍA CONCRETO: ",
-            dcc.Input(id='dia-concreto-horasDiaConcreto', value='', type='text'),
-            "Hora inicial formato(0 para las 12 noche, 1 para la una noche, 23 para las 11 noche)HORA INICIAL: ",
-            dcc.Input(id='hora-inicial-horasDiaConcreto', value='', type='text'),
-            "Hora final: formato(0 para las 12 noche, 1 para la una noche, 23 para las 11 noche) HORA FINAL:",
-            dcc.Input(id='hora-final-horasDiaConcreto', value='', type='text'),
-            "hasta que fecha predecir dia concreto formato (yyyy-mm-dd)FECHA FIN: ",
-            dcc.Input(id='fecha-concreto-diaConcreto', value='', type='text'),
-            html.Button(id='submit-horasDiaConcreto', type='submit', children='Predecir'),
-            html.Br(), html.Br(),
-            html.Div(id='output_div3')
-        ]),
-        html.Div([
-            "Predicción de un número de días desde 2019-01-06 (e.g. introduzca fecha fin ) Fecha Fin: ",
-            dcc.Input(id='hastafecha-todoslosdias', value='i', type='text'),
-            html.Button(id='submit-todoslosdias', type='submit', children='Predecir'),
-            html.Div(id='output_div4')
-        ]),
 
     ], style={'padding': 10, 'flex': 4, 'color': colors['text']}),
 
+    html.Div([
     dcc.Graph(
-        id='example-graph-2',
-        figure=fig
+        id='graph-Dash-1',
+        figure=fig,
     ),
+    ], id='ejemploGraph',),
+    html.Div( "", id='graphprophet',),
+    html.Div( "", id='datosOriginales',),
+
+    html.Div([html.Label("Comparar 1 fecha de 2019-01-06 hasta 2019-12-04 de la predicción con los datos"),
+                dcc.Input(id='comparar', value='', type='text'),
+                html.Button(id='submit-comparar', type='submit', children='Comparar'),
+              ], style={'color': 'black', 'background-color': '#f5f5f5'}),
+    html.Br(),
+    html.Div(id='salidacomparar')
 
 ])
 
 
-# @app.callback(
-#     Output('cities-radio', 'options'),
-#     Input('options-radio', 'value'))
-# def set_cities_options(selected_option):
-#     return [{'label': i, 'value': i} for i in all_options[selected_option]]
+@app.callback(
+    Output('salidacomparar', component_property='children'),
+    Input('submit-comparar', 'n_clicks'),
+    [State('comparar', 'value')],
+    [State('horapredecir', 'value')],
+    [State('fecha-diaConcreto', 'value')],
+    [State('dropdown-descricion', 'value')],
+)
+def update_output_div(clicks, input_value,   hora, fechaDiaConcreto, tramodes):
+    if clicks is not None:
+        numeroDeDias = numOfDays('2019-01-06', fechaDiaConcreto)
+        idtramo = ''
+        df = trafico_union_semestres_sin2019
+        if tramodes != '':
+            idtramo = giveme_idtramo(tramodes)
+        if idtramo != '':
+            df = trafico_union_semestres_sin2019.loc[trafico_union_semestres_sin2019['idTramo'] == int(idtramo)]
+            nombretramo = trafico_union_semestres_sin2019.loc[
+                trafico_union_semestres_sin2019['idTramo'] == int(idtramo), 'descripcion'].unique()[0]
+            df = df.loc[df['hora'] == int(hora)]
+            df['media'] = df['intensidad']['mean']
+
+            df.set_index('fecha', inplace=True)
+            ts = pd.DataFrame({'ds': df.index, 'y': df.media})
+            prophet, forecast = prophet_plot(ts, numeroDeDias)
+            dato = forecast.loc[
+                forecast['ds'] == input_value, 'yhat']
+
+            df2 = trafico_union_semestres_solo2019.loc[trafico_union_semestres_solo2019['idTramo'] == int(idtramo)]
+            df2 = df2.loc[df2['hora'] == int(hora)]
+            df2['media'] = df2['intensidadMedia']
+            df2.head()
+            dato2 = df2.loc[df2['fecha'] == input_value, 'media']
+
+            return f'Predecido: {float(dato)} - dato real: {float(dato2)}'
 
 
 @app.callback(
@@ -145,106 +162,118 @@ def update_output(value):
         return html.H4('id de tramo= ' + str(giveme_idtramo(value)))
 
 
-def giveme_idtramo(value):
+def giveme_idtramo(value): # se busca la descripcion que es igual a value y se coge el idtramo
     if value != 0 and value != '' and trafico_union_semestres_sin2019.loc[
         trafico_union_semestres_sin2019['descripcion'] == value, 'idTramo'].unique().size > 0:
         idtramo = trafico_union_semestres_sin2019.loc[
-        trafico_union_semestres_sin2019['descripcion'] == value, 'idTramo'].unique()[0]
+            trafico_union_semestres_sin2019['descripcion'] == value, 'idTramo'].unique()[0]
         return idtramo
 
-
-@app.callback(Output('output_div', 'children'),
+@app.callback(Output('ejemploGraph', 'children'),
               [Input('submit-diaConcreto', 'n_clicks')],
-              [State('dia-diaConcreto', 'value')],
               [State('fecha-diaConcreto', 'value')],
-              [State('IntenoOcupaoVeloci', 'value')],
               [State('dropdown-descricion', 'value')],
               )
-def update_output2(clicks, diaConcreto_value, fechaDiaConcreto, quepredic, tramodes):
+def update_output2_originales(clicks, fechaDiaConcreto, tramodes):
     if clicks is not None:
-        print(clicks, diaConcreto_value, fechaDiaConcreto, quepredic)
-        numeroDeDias = numOfDays('2019-01-06', fechaDiaConcreto)
-        quepredic = quepredic
+        print(clicks, fechaDiaConcreto)
         idtramo = ''
         df = trafico_union_semestres_sin2019
         if tramodes != '':
             idtramo = giveme_idtramo(tramodes)
         if idtramo != '':
-            print(idtramo)
+            print(idtramo) # Me quedo con todas las filas que tengan el idtramo
+            df = trafico_union_semestres_solo2019.loc[trafico_union_semestres_solo2019['idTramo'] == int(idtramo)]
+            nombretramo = trafico_union_semestres_solo2019.loc[
+                trafico_union_semestres_solo2019['idTramo'] == int(idtramo), 'descripcion'].unique()[0]
+            df['media'] = df['intensidadMedia'] # solo calculo la media de intensidad
+
+        return dcc.Graph(
+            id='prophetfig',
+            figure=px.line(df, x='fecha', y='intensidadMedia',color="hora", title='todas las horas')
+        )
+
+@app.callback(Output('datosOriginales', 'children'),
+              [Input('submit-diaConcreto', 'n_clicks')],
+              [State('horapredecir', 'value')],
+              [State('fecha-diaConcreto', 'value')],
+              [State('dropdown-descricion', 'value')],
+              )
+def update_output2_originales(clicks, hora, fechaDiaConcreto, tramodes):
+    if clicks is not None:
+        print(clicks, fechaDiaConcreto)
+        idtramo = ''
+        df = trafico_union_semestres_sin2019
+        if tramodes != '':
+            idtramo = giveme_idtramo(tramodes)
+        if idtramo != '':
+            print(idtramo) # Me quedo con todas las filas que tengan el idtramo
+            df = trafico_union_semestres_solo2019.loc[trafico_union_semestres_solo2019['idTramo'] == int(idtramo)]
+            nombretramo = trafico_union_semestres_solo2019.loc[
+                trafico_union_semestres_solo2019['idTramo'] == int(idtramo), 'descripcion'].unique()[0]
+            df = df.loc[df['hora'] == int(hora)]
+            df['media'] = df['intensidadMedia'] # solo calculo la media de intensidad
+
+#        return px.line(forecast, x='ds', y='yhat', title='Predicciones')
+        return dcc.Graph(
+            id='prophetfig',
+#            figure=prophet.plot(forecast)
+            figure=px.line(df, x='fecha', y='media', color="hora", title=nombretramo + ' ' + "Datos originales")
+#            figure=px.line(forecast, x='ds', y='yhat', color='hour', title='Prophet')
+        )
+
+@app.callback(Output('graphprophet', 'children'),
+#@app.callback(Output('prophetfig', 'figure'),
+              [Input('submit-diaConcreto', 'n_clicks')],
+              [State('horapredecir', 'value')],
+              [State('fecha-diaConcreto', 'value')],
+              [State('dropdown-descricion', 'value')],
+              )
+def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
+    if clicks is not None:
+        print(clicks, fechaDiaConcreto)
+        numeroDeDias = numOfDays('2019-01-06', fechaDiaConcreto)
+        idtramo = ''
+        df = trafico_union_semestres_sin2019
+        if tramodes != '':
+            idtramo = giveme_idtramo(tramodes)
+        if idtramo != '':
+            print(idtramo) # Me quedo con todas las filas que tengan el idtramo
             df = trafico_union_semestres_sin2019.loc[trafico_union_semestres_sin2019['idTramo'] == int(idtramo)]
-            df = df.loc[df['fecha'].dt.day == int(diaConcreto_value)]
-            if quepredic == "I" or quepredic == "i":
-                df['media'] = df['intensidad']['mean']
-            elif quepredic == "O" or quepredic == "o":
-                df['media'] = df['ocupacion']['mean']
-            elif quepredic == "V" or quepredic == "v":
-                df['media'] = df['velocidad']['mean']
+            nombretramo= trafico_union_semestres_sin2019.loc[
+                trafico_union_semestres_sin2019['idTramo'] == int(idtramo), 'descripcion'].unique()[0]
+#            df = df.loc[df['fecha'].dt.day == int(diaConcreto_value)]
+            df = df.loc[df['hora'] == int(hora)]
+            df['media'] = df['intensidad']['mean'] # solo calculo la media de intensidad
 
         df.set_index('fecha', inplace=True)
         ts = pd.DataFrame({'ds': df.index, 'y': df.media})
-        prophet_plot(ts, numeroDeDias)
-        # fig = go.Figure(data=[go.Scatter(x=ts['ds'], y=ts['y'])])
-        # fig.update_layout(
-        #     title=f"{quepredic} de {diaConcreto_value} de {fechaDiaConcreto}",
-        #     xaxis_title="Fecha",
-        #     yaxis_title=f"{quepredic}",
-        #     font=dict(  family="Courier New, monospace", size=14, color="#7f7f7f"),
-        #     paper_bgcolor=colors['background'],
-        #     plot_bgcolor=colors['background'],
-        #     xaxis=dict( gridcolor=colors['grid'],
-        #                  tickfont=dict(color=colors['text'])),
-        #     yaxis=dict( gridcolor=colors['grid'],
-        #                  tickfont=dict(color=colors['text'])),
-        #     legend_orientation="h",
-        #     legend=dict(x=0, y=1.0, bgcolor=colors['background'],
-        #                  bordercolor=colors['background'],
-        #                  font=dict(color=colors['text'])))
+        prophet, forecast = prophet_plot(ts, numeroDeDias)
+
+        return html.Div([ dcc.Graph(
+            id='prophetfig',
+#            figure=prophet.plot(forecast)
+#            fig=px.line(df, x='fecha', y='intensidadMedia', color="hora", title='Ejemplo')
+            figure=px.line(forecast, x='ds', y='yhat', title='Prophet Predicciones')
+        ),])
+
 
 def prophet_plot(ts, numeroDeDias):
-    prophet = Prophet(changepoint_range=1)
+    prophet = Prophet()
     prophet.fit(ts)
     future = prophet.make_future_dataframe(periods=int(numeroDeDias))
     forecast = prophet.predict(future)
-    fig = prophet.plot(forecast)
-    fig.show()
-
-@app.callback(Output('output_div2', 'children'),
-              [Input('submit-horasConcretasTodos', 'n_clicks')],
-              [State('hora-inicial-horasConcretasTodos', 'value')],
-              [State('hora-final-horasConcretasTodos', 'value')],
-              [State('fecha-horasConcretasTodos', 'value')],
-              [State('IntenoOcupaoVeloci', 'value')],
-              )
-def update_output3(clicks, horaInicialHorasConcretasTodosDias, horaFinalHorasConcretasTodosDias,
-                   fechaHorasConcretasTodosDias, intenoOcupaoVeloci):
-    if clicks is not None:
-        print(clicks, horaInicialHorasConcretasTodosDias, horaFinalHorasConcretasTodosDias,
-              fechaHorasConcretasTodosDias, intenoOcupaoVeloci)
+#    fig = prophet.plot(forecast)
+    #    fig.show()
+    #     fig.update_layout(
+    #         plot_bgcolor=colors['background'],
+    #         paper_bgcolor=colors['background'],
+    #         font_color=colors['text']
+    #     )
+    #figure.savefig('output')
+    return prophet, forecast
 
 
-@app.callback(Output('output_div3', 'children'),
-              [Input('submit-horasDiaConcreto', 'n_clicks')],
-              [State('dia-concreto-horasDiaConcreto', 'value')],
-              [State('hora-inicial-horasDiaConcreto', 'value')],
-              [State('hora-final-horasDiaConcreto', 'value')],
-              [State('fecha-concreto-diaConcreto', 'value')],
-              [State('IntenoOcupaoVeloci', 'value')],
-              )
-def update_output4(clicks, diaConcreto, horaInicialHorasConcretasDiaConcreto, horaFinalHorasConcretasDiaConcreto,
-                   fechaHorasConcretasDiaConcreto, intenoOcupaoVeloci):
-    if clicks is not None:
-        print(clicks, diaConcreto, horaInicialHorasConcretasDiaConcreto, horaFinalHorasConcretasDiaConcreto,
-              fechaHorasConcretasDiaConcreto, intenoOcupaoVeloci)
-
-
-@app.callback(Output('output_div4', 'children'),
-              [Input('submit-todoslosdias', 'n_clicks')],
-              [State('hastafecha-todoslosdias', 'value')],
-              [State('IntenoOcupaoVeloci', 'value')],
-              )
-def update_output5(clicks, fechaHastaDia, intenoOcupaoVeloci):
-    if clicks is not None:
-        print(clicks, fechaHastaDia, intenoOcupaoVeloci)
 
 
 def numOfDays(date1, date2):
@@ -254,6 +283,9 @@ def numOfDays(date1, date2):
     print(d1)
     print(d2)
     return (d2 - d1).days
+
+
+#make_layout(fig)
 
 
 if __name__ == '__main__':
