@@ -289,7 +289,7 @@ def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
             id='prophetfig2',
             figure=plot_plotly(prophet, forecast)
         ),])
-
+#probando
 def prophet_plot(ts, numeroDeDias):
     prophet = Prophet()
     prophet.fit(ts)
