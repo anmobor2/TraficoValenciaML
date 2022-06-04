@@ -8,6 +8,7 @@ import plotly.express as px
 import seaborn as sns
 from dash import Dash, dcc, html, Input, Output, State
 from fbprophet import Prophet
+from prophet.plot import plot_plotly
 
 sns.set(color_codes=True)
 
@@ -62,6 +63,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             'color': colors['text']
         }
     ),
+    html.Div(html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda'), id='nuevabusqueda', ),
     html.Div(children=[
         html.Div([
             html.Label('Seleccione una descripción de tramo para predecir:'),
@@ -99,9 +101,26 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
               ], style={'color': 'black', 'background-color': '#f5f5f5'}),
     html.Br(),
     html.Div(id='salidacomparar'),
-    html.Div(html.Label("Sacar un gráfico con prophet"),),
+    html.Div(html.Label("Sacar un gráfico con prophet"),id="graph-prophet-original",),
 
 ])
+
+@app.callback(
+    Output('nuevabusqueda', 'children'),
+    Input('nuevabusqueda', 'n_clicks')
+)
+def update_df(clicks):
+    if clicks != 0 and clicks != '':
+        trafico_union_semestres_sin2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] > '2019-01-06')]
+        trafico_union_semestres_solo2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] <= '2019-01-06')]
+
+        intensidadMedia = trafico_union_semestres_solo2019['intensidad']['mean']
+        trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
+
+        trafico_union_semestres_solo2019.drop('intensidad', level=0, axis=1, inplace=True)
+        trafico_union_semestres_solo2019.drop('ocupacion', level=0, axis=1, inplace=True)
+        trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True)
+        return html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda')
 
 @app.callback(
     Output('salidacomparar', component_property='children'),
@@ -208,7 +227,6 @@ def update_output2_originales(clicks, hora, fechaDiaConcreto, tramodes):
         )
 
 @app.callback(Output('graphprophet', 'children'),
-#@app.callback(Output('prophetfig', 'figure'),
               [Input('submit-diaConcreto', 'n_clicks')],
               [State('horapredecir', 'value')],
               [State('fecha-diaConcreto', 'value')],
@@ -240,6 +258,37 @@ def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
             figure=px.line(forecast, x='ds', y='yhat', title='Prophet Predicciones')
         ),])
 
+@app.callback(Output('graph-prophet-original', 'children'),
+              [Input('submit-diaConcreto', 'n_clicks')],
+              [State('horapredecir', 'value')],
+              [State('fecha-diaConcreto', 'value')],
+              [State('dropdown-descricion', 'value')],
+              )
+def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
+    if clicks is not None:
+        print(clicks, fechaDiaConcreto)
+        numeroDeDias = numOfDays('2019-01-06', fechaDiaConcreto)
+        idtramo = ''
+        df = trafico_union_semestres_sin2019
+        if tramodes != '':
+            idtramo = giveme_idtramo(tramodes)
+        if idtramo != '':
+            print(idtramo) # Me quedo con todas las filas que tengan el idtramo
+            df = trafico_union_semestres_sin2019.loc[trafico_union_semestres_sin2019['idTramo'] == int(idtramo)]
+            nombretramo= trafico_union_semestres_sin2019.loc[
+                trafico_union_semestres_sin2019['idTramo'] == int(idtramo), 'descripcion'].unique()[0]
+#            df = df.loc[df['fecha'].dt.day == int(diaConcreto_value)]
+            df = df.loc[df['hora'] == int(hora)]
+            df['media'] = df['intensidad']['mean'] # solo calculo la media de intensidad
+
+        df.set_index('fecha', inplace=True)
+        ts = pd.DataFrame({'ds': df.index, 'y': df.media})
+        prophet, forecast = prophet_plot(ts, numeroDeDias)
+
+        return html.Div([ dcc.Graph(
+            id='prophetfig2',
+            figure=plot_plotly(prophet, forecast)
+        ),])
 
 def prophet_plot(ts, numeroDeDias):
     prophet = Prophet()
