@@ -306,5 +306,6 @@ def numOfDays(date1, date2):
     print(d2)
     return (d2 - d1).days
 
+
 if __name__ == '__main__':
     app.run_server(debug=True)
