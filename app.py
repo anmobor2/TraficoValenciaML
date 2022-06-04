@@ -1,16 +1,13 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 
+from datetime import datetime
+
+import pandas as pd
+import plotly.express as px
+import seaborn as sns
 from dash import Dash, dcc, html, Input, Output, State
 from fbprophet import Prophet
-from prophet.plot import plot_plotly
-import plotly.express as px
-import pandas as pd
-import self as self
-import seaborn as sns
-from datetime import date, datetime
-
-from pygments.lexers import go
 
 sns.set(color_codes=True)
 
@@ -30,8 +27,6 @@ trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
 trafico_union_semestres_solo2019.drop('intensidad', level=0, axis=1, inplace=True)
 trafico_union_semestres_solo2019.drop('ocupacion', level=0, axis=1, inplace=True)
 trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True)
-#trafico_union_semestres_solo2019.drop(['intensidad']['count'], axis = 1)
-#print(trafico_union_semestres_solo2019.head())
 
 # el DF temporal
 df = trafico_union_semestres_solo2019.loc[trafico_union_semestres_solo2019['idTramo'] == int(1)]
@@ -43,15 +38,6 @@ colors = {
     'text': '#7FDBFF'
 }
 
-# assume you have a "long-form" data frame
-# see https://plotly.com/python/px-arguments/ for more options
-# df = pd.DataFrame({
-#     "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-#     "Amount": [4, 1, 2, 2, 4, 5],
-#     "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-# })
-# Load a small dataframe as e.g. and when the prophet loads the result update this dataframe also
-#fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
 #fig = px.bar(df, x="fecha", y="intensidadMedia", color="intensidadMedia", barmode="group" )
 fig = px.line(df, x='fecha', y='intensidadMedia',color="hora", title='Ejemplo')
 
@@ -103,18 +89,19 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         figure=fig,
     ),
     ], id='ejemploGraph',),
-    html.Div( "", id='graphprophet',),
+
     html.Div( "", id='datosOriginales',),
+    html.Div("", id='graphprophet', ),
 
     html.Div([html.Label("Comparar 1 fecha de 2019-01-06 hasta 2019-12-04 de la predicción con los datos"),
                 dcc.Input(id='comparar', value='', type='text'),
                 html.Button(id='submit-comparar', type='submit', children='Comparar'),
               ], style={'color': 'black', 'background-color': '#f5f5f5'}),
     html.Br(),
-    html.Div(id='salidacomparar')
+    html.Div(id='salidacomparar'),
+    html.Div(html.Label("Sacar un gráfico con prophet"),),
 
 ])
-
 
 @app.callback(
     Output('salidacomparar', component_property='children'),
@@ -214,12 +201,10 @@ def update_output2_originales(clicks, hora, fechaDiaConcreto, tramodes):
             df = df.loc[df['hora'] == int(hora)]
             df['media'] = df['intensidadMedia'] # solo calculo la media de intensidad
 
-#        return px.line(forecast, x='ds', y='yhat', title='Predicciones')
         return dcc.Graph(
             id='prophetfig',
-#            figure=prophet.plot(forecast)
+
             figure=px.line(df, x='fecha', y='media', color="hora", title=nombretramo + ' ' + "Datos originales")
-#            figure=px.line(forecast, x='ds', y='yhat', color='hour', title='Prophet')
         )
 
 @app.callback(Output('graphprophet', 'children'),
@@ -252,8 +237,6 @@ def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
 
         return html.Div([ dcc.Graph(
             id='prophetfig',
-#            figure=prophet.plot(forecast)
-#            fig=px.line(df, x='fecha', y='intensidadMedia', color="hora", title='Ejemplo')
             figure=px.line(forecast, x='ds', y='yhat', title='Prophet Predicciones')
         ),])
 
@@ -263,18 +246,8 @@ def prophet_plot(ts, numeroDeDias):
     prophet.fit(ts)
     future = prophet.make_future_dataframe(periods=int(numeroDeDias))
     forecast = prophet.predict(future)
-#    fig = prophet.plot(forecast)
-    #    fig.show()
-    #     fig.update_layout(
-    #         plot_bgcolor=colors['background'],
-    #         paper_bgcolor=colors['background'],
-    #         font_color=colors['text']
-    #     )
     #figure.savefig('output')
     return prophet, forecast
-
-
-
 
 def numOfDays(date1, date2):
     format = '%Y-%m-%d'
@@ -283,9 +256,6 @@ def numOfDays(date1, date2):
     print(d1)
     print(d2)
     return (d2 - d1).days
-
-
-#make_layout(fig)
 
 
 if __name__ == '__main__':
