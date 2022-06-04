@@ -289,7 +289,7 @@ def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
             id='prophetfig2',
             figure=plot_plotly(prophet, forecast)
         ),])
-#probando
+
 def prophet_plot(ts, numeroDeDias):
     prophet = Prophet()
     prophet.fit(ts)
@@ -305,7 +305,6 @@ def numOfDays(date1, date2):
     print(d1)
     print(d2)
     return (d2 - d1).days
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
