@@ -1,6 +1,6 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
-
+import math
 from datetime import datetime
 
 import pandas as pd
@@ -21,7 +21,6 @@ idTramoDescripcion = trafico_union_semestres[['descripcion', 'idTramo']].drop_du
 trafico_union_semestres_sin2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] > '2019-01-06')]
 trafico_union_semestres_solo2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] <= '2019-01-06')]
 
-#trafico_union_semestres_solo2019['intensidadMedia'] = trafico_union_semestres_solo2019['intensidad']['mean']
 intensidadMedia = trafico_union_semestres_solo2019['intensidad']['mean']
 trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
 
@@ -32,14 +31,11 @@ trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True
 # el DF temporal
 df = trafico_union_semestres_solo2019.loc[trafico_union_semestres_solo2019['idTramo'] == int(1)]
 
-dataframeprophet = pd.DataFrame()
-
 colors = {
     'background': '#777777',
     'text': '#7FDBFF'
 }
 
-#fig = px.bar(df, x="fecha", y="intensidadMedia", color="intensidadMedia", barmode="group" )
 fig = px.line(df, x='fecha', y='intensidadMedia',color="hora", title='Ejemplo')
 
 # Este se cargará luego con el tendrá la misma fecha que el resultado de la prediccion de Prophet
@@ -63,7 +59,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             'color': colors['text']
         }
     ),
-    html.Div(html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda'), id='nuevabusqueda', ),
+    # html.Div(html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda'), id='nuevabusqueda', ),
     html.Div(children=[
         html.Div([
             html.Label('Seleccione una descripción de tramo para predecir:'),
@@ -105,22 +101,22 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
 ])
 
-@app.callback(
-    Output('nuevabusqueda', 'children'),
-    Input('nuevabusqueda', 'n_clicks')
-)
-def update_df(clicks):
-    if clicks != 0 and clicks != '':
-        trafico_union_semestres_sin2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] > '2019-01-06')]
-        trafico_union_semestres_solo2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] <= '2019-01-06')]
-
-        intensidadMedia = trafico_union_semestres_solo2019['intensidad']['mean']
-        trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
-
-        trafico_union_semestres_solo2019.drop('intensidad', level=0, axis=1, inplace=True)
-        trafico_union_semestres_solo2019.drop('ocupacion', level=0, axis=1, inplace=True)
-        trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True)
-        return html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda')
+# @app.callback(
+#     Output('nuevabusqueda', 'children'),
+#     Input('nuevabusqueda', 'n_clicks')
+# )
+# def update_df(clicks):
+#     if clicks != 0 and clicks != '':
+#         trafico_union_semestres_sin2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] > '2019-01-06')]
+#         trafico_union_semestres_solo2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] <= '2019-01-06')]
+#
+#         intensidadMedia = trafico_union_semestres_solo2019['intensidad']['mean']
+#         trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
+#
+#         trafico_union_semestres_solo2019.drop('intensidad', level=0, axis=1, inplace=True)
+#         trafico_union_semestres_solo2019.drop('ocupacion', level=0, axis=1, inplace=True)
+#         trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True)
+#         return html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda')
 
 @app.callback(
     Output('salidacomparar', component_property='children'),
@@ -253,10 +249,17 @@ def update_output2(clicks, hora, fechaDiaConcreto, tramodes):
         ts = pd.DataFrame({'ds': df.index, 'y': df.media})
         prophet, forecast = prophet_plot(ts, numeroDeDias)
 
+        media = sum(df.media) / len(df.media)
+        varianza_originales = sum((l-media)**2 for l in df.media) / len(df.media)
+        st_dev_originales = math.sqrt(varianza_originales)
+        varianza_predecidos = sum((l-media)**2 for l in forecast.yhat) / len(forecast.yhat)
+        st_dev_predecidos = math.sqrt(varianza_predecidos)
+
+
         return html.Div([ dcc.Graph(
             id='prophetfig',
             figure=px.line(forecast, x='ds', y='yhat', title='Prophet Predicciones')
-        ),])
+        ), "Desviación típica Originales = " + str(st_dev_originales) + " - Desviación típica Predecidos respecto Media de Originales = " + str(st_dev_predecidos)])
 
 @app.callback(Output('graph-prophet-original', 'children'),
               [Input('submit-diaConcreto', 'n_clicks')],
