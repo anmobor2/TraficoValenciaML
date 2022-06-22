@@ -101,23 +101,6 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
 ])
 
-# @app.callback(
-#     Output('nuevabusqueda', 'children'),
-#     Input('nuevabusqueda', 'n_clicks')
-# )
-# def update_df(clicks):
-#     if clicks != 0 and clicks != '':
-#         trafico_union_semestres_sin2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] > '2019-01-06')]
-#         trafico_union_semestres_solo2019 = trafico_union_semestres[~(trafico_union_semestres['fecha'] <= '2019-01-06')]
-#
-#         intensidadMedia = trafico_union_semestres_solo2019['intensidad']['mean']
-#         trafico_union_semestres_solo2019['intensidadMedia'] = intensidadMedia
-#
-#         trafico_union_semestres_solo2019.drop('intensidad', level=0, axis=1, inplace=True)
-#         trafico_union_semestres_solo2019.drop('ocupacion', level=0, axis=1, inplace=True)
-#         trafico_union_semestres_solo2019.drop('velocidad', level=0, axis=1, inplace=True)
-#         return html.Button(id='submit-nuevabusqueda', type='submit', children='Nueva Busqueda')
-
 @app.callback(
     Output('salidacomparar', component_property='children'),
     Input('submit-comparar', 'n_clicks'),
