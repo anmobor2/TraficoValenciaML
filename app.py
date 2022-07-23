@@ -4,6 +4,7 @@ import math
 import time
 from datetime import datetime
 
+import dash
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
@@ -37,13 +38,14 @@ prediction_date = '2019-12-04'
 # trafico_datos_test = trafico_union_semestres[~(trafico_union_semestres['fecha'] == prediction_date)]
 trafico_entrenamiento = pd.DataFrame()
 trafico_datos_test = pd.DataFrame()
-column_names = ["fecha", "Predicción", "Valor Real"]
-
-def dame_results():
-    return RESULTS
+column_names = ["Fecha", "Hora", "Predicción", "Valor Real"]
 
 RESULTS = pd.DataFrame(columns=column_names)
 print(RESULTS.head())
+forecast = pd.DataFrame(data=None)
+
+def dame_results():
+    return RESULTS
 
 # el DF temporal
 df = trafico_union_semestres.loc[trafico_union_semestres['idTramo'] == int(1)]
@@ -90,6 +92,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             "hasta que fecha predecir a partir de 2019-01-06 hasta 2019-12-04 formato (yyyy-mm-dd): ",
             dcc.Input(id='fecha-diaConcreto', value='', type='text'),
             html.Button(id='submit-diaConcreto', type='submit', children='Predecir'),
+            html.Br(),
+            html.Button(id='submit-reset', type='submit', children='Reset Tabla de datos'),
             html.Br(), html.Br(),
 
             html.Div(id='output_div')
@@ -106,14 +110,16 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
     html.Br(), html.Br(),
 
-    html.Div([
+    html.Div(
     html.Div(html.Label("Sacar un gráfico con prophet prediccion-plot_plotly-prophet"),
-             id="prediccion-plot_plotly-prophet", style={'float':'left','width':'45%'}),
+             id="prediccion-plot_plotly-prophet", ),
+    style={'display': 'flex', 'justify-content': 'center', 'display': 'inline-block'}),
+
+    html.Br(), html.Br(),
+
     html.Div([
             html.H4(children='Comparación de resultados predecidos y reales'),
-        ], id='tablaComparación', style={'float':'write','width':'45%', 'margin':'5%'}),
-    ], style={'display': 'flex'})
-
+        ], id='tablaComparación', ),
 ])
 
 
@@ -145,20 +151,6 @@ def giveme_idtramo(nomtramo):  # se busca la descripcion que es igual a value y 
         return idtramo
 
 
-# Meto los resultados de la predicción y los reales en el dataframe que usara la generate_table para mostrar la tabla de comparaciones.
-def actualizar_resultados_comparar_dataframe(fechaDiaConcreto, forecast, hora, idtramo):
-    intensidadMediaPrediccion = forecast.loc[forecast['ds'] == fechaDiaConcreto, 'yhat'].values[0]
-
-    df_reales = trafico_union_semestres.loc[trafico_union_semestres['idTramo'] == int(idtramo)]
-    df_reales = df_reales.loc[df_reales['fecha'] == fechaDiaConcreto]
-    intensidadMediaReal = df_reales.loc[df_reales['hora'] == int(hora), 'intensidadMedia'].values[0]
-
-    dict = pd.DataFrame([[fechaDiaConcreto, intensidadMediaPrediccion, intensidadMediaReal]], columns = ["fecha", "Predicción", "Valor Real"])
-    RESULTS = dame_results()
-    RESULTS = pd.concat([RESULTS, dict], ignore_index=True, axis=0)
-    return RESULTS
-
-
 # Shows the real data for the time series for the street for all hours, not the prediction (candidate to disappear)
 @app.callback(Output('prediccionDash', 'children'),
               [Input('submit-diaConcreto', 'n_clicks')],
@@ -167,6 +159,7 @@ def actualizar_resultados_comparar_dataframe(fechaDiaConcreto, forecast, hora, i
               [State('horapredecir', 'value')],
               )
 def prediccion_dash(clicks, fechaDiaConcreto, tramodes, hora):
+    print(prediccion_dash)
     if clicks is not None:
         print(clicks, fechaDiaConcreto)
         idtramo = ''
@@ -178,14 +171,12 @@ def prediccion_dash(clicks, fechaDiaConcreto, tramodes, hora):
         if idtramo != '':
             trafico_entrenamiento, trafico_datos_test = split_data_by_precdiction_date(fechaDiaConcreto)
             # Me quedo con todas las filas que tengan el idtramo
-            df = trafico_entrenamiento.loc[trafico_entrenamiento['idTramo'] == int(idtramo)]
+            df = trafico_entrenamiento.loc[trafico_entrenamiento['idTramo'] == idtramo]
             df = df.loc[df['hora'] == int(hora)]
             df.set_index('fecha', inplace=True)
             ts = pd.DataFrame({'ds': df.index, 'y': df.intensidadMedia})
 
             prophet, forecast = devolver_prediccion_prophet(ts, numeroDeDias)
-
-            RESULTS = actualizar_resultados_comparar_dataframe(fechaDiaConcreto, forecast, hora, idtramo)
             
         # Primer gráfico
         return dcc.Graph(
@@ -202,6 +193,7 @@ def prediccion_dash(clicks, fechaDiaConcreto, tramodes, hora):
               [State('dropdown-descricion', 'value')],
               )
 def grafico_real_prophet_plotly(clicks, hora, fechaDiaConcreto, tramodes):
+    print(grafico_real_prophet_plotly)
     if clicks is not None:
         #        print(clicks, fechaDiaConcreto)
         #        numeroDeDias = numOfDays('2019-01-06', fechaDiaConcreto)
@@ -225,6 +217,8 @@ def grafico_real_prophet_plotly(clicks, hora, fechaDiaConcreto, tramodes):
         ts = pd.DataFrame({'ds': df.index, 'y': df.intensidadMedia})
         prophet, forecast = devolver_prediccion_prophet(ts, numeroDeDias)
 
+#        mostrar_tabla_de_datos(clicks, fechaDiaConcreto, tramodes, hora, forecast)
+
         return html.Div([dcc.Graph(
             id='prophetfig2',
             figure=plot_plotly(prophet, forecast)
@@ -233,6 +227,7 @@ def grafico_real_prophet_plotly(clicks, hora, fechaDiaConcreto, tramodes):
 
 # return the prophet object function and the forecast dataframe for the prediction
 def devolver_prediccion_prophet(ts, numeroDeDias):
+    global forecast
     prophet = Prophet()
     prophet.fit(ts)
     future = prophet.make_future_dataframe(periods=int(numeroDeDias))
@@ -243,27 +238,47 @@ def devolver_prediccion_prophet(ts, numeroDeDias):
 
 @app.callback(Output('tablaComparación', 'children'),
               [Input('submit-diaConcreto', 'n_clicks')],
+              [Input('submit-reset', 'n_clicks')],
               [State('fecha-diaConcreto', 'value')],
               [State('dropdown-descricion', 'value')],
               [State('horapredecir', 'value')],
               )
-def mostrar_tabla_de_datos(clicks, fechaDiaConcreto, tramodes, hora):
-    if clicks is not None:
+def mostrar_tabla_de_datos(clicks, clicks2, fechaDiaConcreto, tramodes, hora):
+    print("DASH CONTEXT IS: ======= ", dash.callback_context)
+    button_id = dash.ctx.triggered_id if not None else 'No clicks yet'
+    print("#@#@#@#@#@#@#@#@#@#@#@#@#@#@#@#",button_id)
 
-        idtramo = ''
-        numeroDeDias = 1
-        if tramodes != '':
-            idtramo = giveme_idtramo(tramodes)
-        if idtramo != '':
-            trafico_entrenamiento, trafico_datos_test = split_data_by_precdiction_date(fechaDiaConcreto)
-            df = trafico_entrenamiento.loc[trafico_entrenamiento['idTramo'] == int(idtramo)]
-            df = df.loc[df['hora'] == int(hora)]
-            df.set_index('fecha', inplace=True)
-            ts = pd.DataFrame({'ds': df.index, 'y': df.intensidadMedia})
+    global RESULTS
+    if clicks or clicks2 is not None:
+        if button_id == 'submit-reset':
+            RESULTS.empty
+            RESULTS = dame_results()
+            RESULTS.empty
+            RESULTS = pd.DataFrame(columns=column_names)
+        else:
+            idtramo = ''
+            numeroDeDias = 1
+            if tramodes != '':
+                idtramo = giveme_idtramo(tramodes)
+            if idtramo != '':
+                trafico_entrenamiento, trafico_datos_test = split_data_by_precdiction_date(fechaDiaConcreto)
+                df = trafico_entrenamiento.loc[trafico_entrenamiento['idTramo'] == int(idtramo)]
+                df = df.loc[df['hora'] == int(hora)]
+                df.set_index('fecha', inplace=True)
+                ts = pd.DataFrame({'ds': df.index, 'y': df.intensidadMedia})
 
-            prophet, forecast = devolver_prediccion_prophet(ts, numeroDeDias)
+                prophet, forecast = devolver_prediccion_prophet(ts, numeroDeDias)
 
-            RESULTS = actualizar_resultados_comparar_dataframe(fechaDiaConcreto, forecast, hora, idtramo)
+                intensidadMediaPrediccion = forecast.loc[forecast['ds'] == fechaDiaConcreto, 'yhat'].values[0]
+
+                df_reales = trafico_union_semestres.loc[trafico_union_semestres['idTramo'] == int(idtramo)]
+                df_reales = df_reales.loc[df_reales['fecha'] == fechaDiaConcreto]
+                intensidadMediaReal = df_reales.loc[df_reales['hora'] == int(hora), 'intensidadMedia'].values[0]
+
+                dict = pd.DataFrame([[fechaDiaConcreto, hora, float("{:.2f}".format(intensidadMediaPrediccion)), float("{:.2f}".format(intensidadMediaReal))]],
+                                columns=["Fecha", "Hora", "Predicción", "Valor Real"])
+                #    RESULTS = dame_results()
+                RESULTS = pd.concat([RESULTS, dict], ignore_index=True, axis=0)
             print('RESULTS =====######### ', RESULTS)
             return html.Table([
                 html.Thead(
@@ -274,9 +289,7 @@ def mostrar_tabla_de_datos(clicks, fechaDiaConcreto, tramodes, hora):
                         html.Td(RESULTS.iloc[i][col]) for col in RESULTS.columns
                     ]) for i in range(min(len(RESULTS), 100))
                 ])
-            ]),
-            persistence_type = 'session',
-            persistence = RESULTS
+            ])
 
 if __name__ == '__main__':
     app.run_server(debug=True)
