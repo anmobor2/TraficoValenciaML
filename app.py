@@ -295,10 +295,6 @@ if __name__ == '__main__':
     app.run_server(debug=True)
 
 
-
-
-
-
 #         media = sum(df.intensidadMedia) / len(df.intensidadMedia)
 #         varianza_originales = sum((l-media)**2 for l in df.intensidadMedia) / len(df.intensidadMedia)
 #         st_dev_originales = math.sqrt(varianza_originales)
