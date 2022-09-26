@@ -292,8 +292,19 @@ def grafico_real_prophet_plotly(clicks, hora, fechaDiaConcreto, tramodes):
 
 # return the prophet object function and the forecast dataframe for the prediction
 def devolver_prediccion_prophet(ts, numeroDeDias):
+    # vacaciones = pd.DataFrame({
+    #     'holiday': 'semanaSanta',
+    #     'ds': pd.to_datetime(['2017-04-09', '2017-04-10', '2017-04-11', '2017-04-12', '2017-04-13', '2017-04-14',
+    #                           '2017-04-15', '2017-04-16', '2018-03-25', '2018-03-26', '2018-03-27', '2018-03-28',
+    #                           '2018-03-29', '2018-03-30', '2018-03-31', '2018-04-01', '2019-04-14', '2018-04-15',
+    #                           '2019-04-16', '2018-04-17', '2019-04-18', '2019-04-19', '2019-04-20', '2019-04-21']),
+    #     'lower_window': 0,
+    #     'upper_window': 1,
+    # })
+    # holidays=vacaciones,
+
     global forecast #changepoint_range es el range de los puntos de cambio, se utiliza el 100% = 1 de los datos para identificar los puntos de cambio
-    prophet = Prophet(changepoint_range = 1, changepoint_prior_scale = 0.1, daily_seasonality = False, weekly_seasonality = True, yearly_seasonality = True)
+    prophet = Prophet( changepoint_range = 1, changepoint_prior_scale = 0.1, daily_seasonality = True, weekly_seasonality = True, yearly_seasonality = True)
     prophet.fit(ts) #changepoint_prior_scale 0.05 permite la detección automática de los puntos de cambio, aumentarlo para que detecte menos puntos de cambio
     future = prophet.make_future_dataframe(periods=int(numeroDeDias))
     forecast = prophet.predict(future)
