@@ -256,7 +256,7 @@ def prediccion_Skforecast(clicks, fechaDiaConcreto, tramodes, hora):
             figure=px.line(data_train, x='date', y='y', title='Skforecast Predicciones'))
 
 def devolver_forecaster():
-    regressor = RandomForestRegressor(max_depth=3, n_estimators=100, random_state=123)
+    regressor = RandomForestRegressor(max_depth=3, n_estimators=100, random_state=123)#maxima profundida de los arboles 3, numero de arboles 100
     forecaster = ForecasterAutoreg(
         regressor=regressor,
         lags=36
@@ -305,7 +305,7 @@ def devolver_prediccion_prophet(ts, numeroDeDias):
 
     global forecast #changepoint_range es el range de los puntos de cambio, se utiliza el 100% = 1 de los datos para identificar los puntos de cambio
     prophet = Prophet( changepoint_range = 1, changepoint_prior_scale = 0.1, daily_seasonality = True, weekly_seasonality = True, yearly_seasonality = True)
-    prophet.fit(ts) #changepoint_prior_scale 0.05 permite la detección automática de los puntos de cambio, aumentarlo para que detecte menos puntos de cambio
+    prophet.fit(ts) #changepoint_prior_scale 0.05 permite la detección automática de los puntos de cambio, aumentarlo para que detecte más puntos de cambio
     future = prophet.make_future_dataframe(periods=int(numeroDeDias))
     forecast = prophet.predict(future)
     # figure.savefig('output')
