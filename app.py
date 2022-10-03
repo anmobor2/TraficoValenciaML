@@ -259,7 +259,7 @@ def devolver_forecaster():
     regressor = RandomForestRegressor(max_depth=3, n_estimators=100, random_state=123)#maxima profundida de los arboles 3, numero de arboles 100
     forecaster = ForecasterAutoreg(
         regressor=regressor,
-        lags=36
+        lags=36 #time window for reading data 36 months
     )
     return forecaster
 
