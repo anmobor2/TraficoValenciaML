@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 
@@ -15,7 +16,7 @@ import dash
 import plotly.express as px
 import seaborn as sns
 from dash import Dash, dcc, html, Input, Output, State
-from fbprophet import Prophet
+from prophet import Prophet
 from prophet.plot import plot_plotly
 
 # Configurations
@@ -154,7 +155,7 @@ def prediccion_Skforecast(clicks, fechaDiaConcreto, tramodes, hora):
             forecaster.fit(y=data_train['y'])
             predictionsSkforecast = forecaster.predict(steps=1)
             predictionSK = pd.DataFrame({'date': pd.to_datetime(fechaDiaConcreto), 'y': predictionsSkforecast.values})
-            data_train = data_train.append(predictionSK)
+            data_train = data_train.concat(predictionSK)
             return dcc.Graph(id='prophetfig', figure=px.line(data_train, x='date', y='y', title='Skforecast Predicciones'))
 
 def devolver_forecaster():
