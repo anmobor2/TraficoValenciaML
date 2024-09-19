@@ -451,18 +451,14 @@ def mostrar_tabla_de_datos(clicks, clicks2, fechaDiaConcreto, tramodes, hora):
                 dftest, data_train = datosEntrenamientoYTestSkforecast(idtramo, hora, ts, fechaDiaConcreto)
 
                 steps = 1  # numero de días a predecir por Skforecast
-                #                lags = data_train.shape[0]  # el numero de elementos utilizados para entrenar y generar la predección
                 data_test = trafico_datos_test
                 data_train = data_train.fillna(data_train[
                                                    'y'].mean())  # n_estimators: número de árboles incluidos en el modelo. random_state: semilla para que los resultados sean reproducibles
                 forecaster = devolver_forecaster()
                 forecaster.fit(y=data_train['y'])  # aquí se entrena el modelo de Skforecast
-                predictionsSkforecast = forecaster.predict(steps=steps)  # aquÍ se genera la predicción de Skforecast
+                predictionsSkforecast = forecaster.predict(steps=steps)
 
-                # End Skforecast prediction
                 prediccion_prophet = pd.DataFrame([[intensidadMediaPrediccionProphet]], columns=['Prediccion_Prophet'])
-                prophet_dataframe = pd.DataFrame(columns=[
-                    'Prediccion_Prophet'])  # to concatenate with the previous prophet predictions for calculating errors
                 if not RESULTS[
                     'Prediccion_Prophet'].empty:  # si no está vacío, se concatena con el dataframe de Predicciones de Prophet para calcular el error cuadrado medio
                     prophet_dataframe = pd.concat(
@@ -486,7 +482,7 @@ def mostrar_tabla_de_datos(clicks, clicks2, fechaDiaConcreto, tramodes, hora):
                 valor_real = pd.DataFrame([[intensidadMediaReal]],
                                           columns=['Valor_Real'])  # Dataframe con el valor real
                 real_dataframe = pd.DataFrame(
-                    columns=['Valor_Real'])  # to concatenate with the previous real values for calculating errors
+                    columns=['Valor_Real'])
                 if not RESULTS[
                     'Valor_Real'].empty:  # si no está vacío, se concatena con el dataframe de valores reales para calcular el error cuadrado medio
                     real_dataframe = pd.concat([RESULTS['Valor_Real'], valor_real['Valor_Real']], ignore_index=True,
