@@ -1,6 +1,8 @@
 # TraficoValenciaML
 machine learning trafico valencia
 
+##Application Python machine learning from Jupyters Notebooks.
+
 app.py is the main file, run with python app.py The data is in Google drive
 Python 3.9
 
