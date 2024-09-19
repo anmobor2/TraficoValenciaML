@@ -344,7 +344,7 @@ def prediccion_Skforecast(clicks, fechaDiaConcreto, tramodes, hora):
 
         # Primer gráfico
         return dcc.Graph(
-            id='prophetfig',
+            id='prophetfig3',
             #            figure=px.line(df, x='fecha', y='intensidadMedia',color="hora", title='todas las horas'),
             figure=px.line(data_train, x='date', y='y', title='Skforecast Predicciones'))
 
