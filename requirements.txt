@@ -1,0 +1,9 @@
+numpy==1.23.5
+pandas
+matplotlib
+scikit-learn
+skforecast
+dash
+plotly
+seaborn
+prophet
