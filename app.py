@@ -43,7 +43,6 @@ sns.set(color_codes=True)
 
 app = Dash(__name__)
 
-# trafico_union_semestres = pd.read_pickle('trafico_union_semestres.plk')
 trafico_union_semestres = pd.read_pickle('tramosFechasCompletas.plk')
 
 # 'mean' está en un segundo nivel dentro del dataframe y de intensidad, creo la columna 'intensidadMedia'
