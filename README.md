@@ -3,7 +3,8 @@ machine learning trafico valencia
 
 ## Application Python machine learning from Jupyter Notebooks.
 
-app.py is the main file, run with python app.py The data is in Google drive
+app.py is the main file, run with python app.py The data is in Google drive.
+
 Python 3.9
 
 to set the remote repo:
