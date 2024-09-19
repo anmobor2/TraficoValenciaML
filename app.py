@@ -4,24 +4,39 @@
 
 import numpy as np
 import pandas as pd
+
+# Plots
+# ==============================================================================
 import matplotlib.pyplot as plt
+import plotly.express as px
+plt.style.use('fivethirtyeight')
+plt.rcParams['lines.linewidth'] = 1.5
+from prophet.plot import plot_plotly
+
+# Modeling and Forecasting
+# ==============================================================================
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from skforecast.ForecasterAutoreg import ForecasterAutoreg
+
+# Warnings configuration
+# ==============================================================================
 import warnings
+
+
 import math
 import time
 from datetime import datetime
+
+
 import dash
-import plotly.express as px
 import seaborn as sns
 from dash import Dash, dcc, html, Input, Output, State
 from prophet import Prophet
-from prophet.plot import plot_plotly
+
 
 # Configurations
-plt.style.use('fivethirtyeight')
-plt.rcParams['lines.linewidth'] = 1.5
+
 sns.set(color_codes=True)
 
 sns.set(color_codes=True)
